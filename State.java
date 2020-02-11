@@ -9,10 +9,11 @@ public class State {
         this.optMove = '\0';
     }
 
-    public State(int stateNum, char optMove, int[] coords) {
+    public State(int stateNum, int x, int y, int z) {
         this.stateNum = stateNum;
-        this.optMove = optMove;
-        this.coords = coords;
+        this.coords[0] = x;
+        this.coords[1] = y;
+        this.coords[2] = z;
     }
 
     public State(int stateNum, char optMove, int x, int y, int z) {

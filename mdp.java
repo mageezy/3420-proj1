@@ -21,9 +21,21 @@ public class mdp {
     public static double Counter_Prob = .1;
     private static double[][][] Rewards = new double[65][65][4];
     private static double[][][] Transition = new double[65][65][4];
+    private static State[][][] Game_Board= new State[5][15][2];//odds z = 1, evens z = 0
 
     public static void main(String [] args) {
-        State rando = new State(1, 'N', 1, 1, 1);
+        Game_Board[4][1][0] = new State(0, 4, 1, 0);
+        Game_Board[4][1][1] = new State(1, 4, 1, 1);
+        Game_Board[4][2][0] = new State(2, 4, 2, 0);
+        Game_Board[4][2][1] = new State(3, 4, 2, 1);
+        Game_Board[4][3][0] = new State(4, 4, 3, 0);
+        Game_Board[4][3][1] = new State(5, 4, 3, 1);
+        Game_Board[4][4][0] = new State(6, 4, 4, 0);
+        Game_Board[4][4][1] = new State(7, 4, 4, 1);
+        Game_Board[4][5][0] = new State(8, 4, 5, 0);
+        Game_Board[4][5][1] = new State(9, 4, 5, 1);
+        Game_Board[4][6][0] = new State(10, 4, 6, 0);
+
         //System.out.println("it do something");
     }
 

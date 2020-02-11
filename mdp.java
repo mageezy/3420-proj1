@@ -5,6 +5,7 @@
 public class mdp {
 
 //TODO
+//make terminal states terminal!!
 //maybe make 1d array of state values to reference by state number
 //maybe write function to build 3d array of transition function answers and reward answers
 //instead of calling the functions every time.

@@ -5,13 +5,8 @@
 public class mdp {
 
 //TODO
-
-//maybe make 1d array of state values to reference by state number
 //maybe write function to build 3d array of transition function answers and reward answers
 //instead of calling the functions every time.
-
-//add step cost for steps that dont work like running into the wall
-//make terminal states terminal!!
 
     //==========  Global Variables  ==========
 
@@ -26,6 +21,7 @@ public class mdp {
     //private static double[][][] Rewards = new double[65][65][4];
     //private static double[][][] Transition = new double[65][65][4];
     private static State[][][] Game_Board= new State[5][15][2];//odds z = 1, evens z = 0
+    private static State[] states = new State[65];
 
     //enums to keep directions mapped to one specific value.
     public enum dir {
@@ -35,29 +31,75 @@ public class mdp {
         W(3);
 
         public final int val;
-        dir(int val) { this.val = val; }
+        dir(int val) { 
+            this.val = val; 
+        }
+
+        //get direction clockwise of current direction
+        public dir clockwise() {
+            switch(this) {
+                case N:
+                    return E;
+                case S:
+                    return W;
+                case E:
+                    return S;
+                case W:
+                    return N;
+                default:
+                    System.out.println("invalid direction");
+                    return null;
+            }
+        }
+
+        //get direction counterclockwise of current direction
+        public dir counter() {
+            switch(this) {
+                case N:
+                    return W;
+                case S:
+                    return E;
+                case E:
+                    return N;
+                case W:
+                    return S;
+                default:
+                    System.out.println("invalid direction");
+                    return null;
+            }
+        }
     }
 
     /**
-     * 
+     * Generates a game board, populates an array of every state, initializes every states
+     * neighbors, and then runs test cases on reward function, transition function, and 
+     * neghbor assignments.
      * @param args
      */
     public static void main(String [] args) {
         generateBoard();
+        genStateArray();
+        genNeighbors();
 
         //test functions for the transition function.
-        double prob1 = transition(Game_Board[0][0][0], dir.E, Game_Board[0][1][0]);//should be .8
-        double prob2 = transition(Game_Board[0][0][0], dir.S, Game_Board[0][1][0]);//should be .1
-        double prob3 = transition(Game_Board[0][2][1], dir.E, Game_Board[0][3][0]);//should be .8
-        double prob4 = transition(Game_Board[1][3][1], dir.E, Game_Board[0][3][0]);//should be .1
-        double prob5 = transition(Game_Board[0][3][0], dir.E, Game_Board[1][2][1]);//should be 0
+        double prob1 = transition(states[62], dir.W, states[62]);//should be .1
+        double prob2 = transition(states[63], dir.E, states[64]);//should be .8
+        double prob3 = transition(states[44], dir.E, states[46]);//should be 0
+        double prob4 = transition(states[1], dir.W, states[1]);//should be .8
+        double prob5 = transition(states[32], dir.N, states[34]);//should be .1
 
         //test functions for the reward function.
-        double item1 = reward(Game_Board[4][13][0], dir.E, Game_Board[4][14][0]);//should be .96
-        double item2 = reward(Game_Board[4][13][0], dir.W, Game_Board[4][14][0]);//should be 0
-        double item3 = reward(Game_Board[2][3][0], dir.E, Game_Board[2][4][0]);//should be -1.04
-        double item4 = reward(Game_Board[1][3][1], dir.E, Game_Board[0][3][0]);//should be -.04
-        double item5 = reward(Game_Board[2][3][0], dir.E, Game_Board[1][3][0]);//should be -.04
+        double item1 = reward(states[26], dir.E, states[28]);//should be .96
+        double item2 = reward(states[27], dir.W, states[29]);//should be -.04
+        double item3 = reward(states[46], dir.W, states[44]);//should be -1.04
+        double item4 = reward(states[8], dir.E, states[10]);//should be -.04
+        double item5 = reward(states[62], dir.N, states[62]);//should be -.04
+
+        //neighbor test functions.
+        State nbor1 = states[63].getNeighbor(dir.E);//should be 64
+        State nbor2 = states[30].getNeighbor(dir.W);//should be 30
+        State nbor3 = states[48].getNeighbor(dir.S);//should be 48
+        State nbor4 = states[52].getNeighbor(dir.N);//should be 60
         
         //print out transition tests
         System.out.println("\n===== Transition Tests =====");
@@ -74,6 +116,13 @@ public class mdp {
         System.out.println(item3);
         System.out.println(item4);
         System.out.println(item5);
+
+        //print out neighbor tests.
+        System.out.println("\n===== Neighbor Tests =====");
+        System.out.println(nbor1);
+        System.out.println(nbor2);
+        System.out.println(nbor3);
+        System.out.println(nbor4);
     }
 
     /**
@@ -149,26 +198,80 @@ public class mdp {
     }
 
     /**
+     * This function generates an array of state values where the state number is the states index
+     * in the array. this allows easier access for test functions and assigning neighbors.
+     */
+    public static void genStateArray() {
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 15; y++) {
+                for (int z = 0; z < 2; z++) {
+                    State state = Game_Board[x][y][z];
+                    if (state != null) {
+                        states[state.getStateNum()] = state;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * this function assignes every state 4 neighbor states, one for each possible direction.
+     * terminal cases have themselves as all neighbors, and wall cases have themselves for the
+     * neighbor in the direction of the wall.
+     */
+    public static void genNeighbors() {
+        for (State state : states) {
+            //if terminal state it can't go anywhere.
+            if (terminal(state)) {
+                state.setNeighbor(dir.N, state);
+                state.setNeighbor(dir.S, state);
+                state.setNeighbor(dir.E, state);
+                state.setNeighbor(dir.W, state);
+            } else {//if not terminal state set neighbors normally
+                int x = state.getXCoord();
+                int y = state.getYCoord();
+                int z = state.getZCoord();
+                //set south neighbor
+                if ((x < 4) && (Game_Board[x+1][y][z] != null)) {
+                    state.setNeighbor(dir.S, Game_Board[x+1][y][z]);
+                } else state.setNeighbor(dir.S, state);
+                //set north neighbor
+                if ((x > 0) && (Game_Board[x-1][y][z] != null)) {
+                    state.setNeighbor(dir.N, Game_Board[x-1][y][z]);
+                } else state.setNeighbor(dir.N, state);
+                //set east neighbor
+                if ((y < 14) && (Game_Board[x][y+1][z] != null)) {
+                    state.setNeighbor(dir.E, Game_Board[x][y+1][z]);
+                } else state.setNeighbor(dir.N, state);
+                //set west neighbor
+                if ((y > 0) && (Game_Board[x][y-1][z] != null)) {
+                    state.setNeighbor(dir.W, Game_Board[x][y-1][z]);
+                } else state.setNeighbor(dir.W, state);
+            } 
+            //set special cases for 63 and 57 going to key state 64
+            if (state.getStateNum() == 63) state.setNeighbor(dir.E, states[64]);
+            if (state.getStateNum() == 57) state.setNeighbor(dir.N, states[64]);
+        }
+    }
+    /**
      * Calculates the reward for going from state start to state next with specified action
      * if the action will not go from start to next then it returns 0, otherwise it returns
      * the step cost added to whatever reward may be at a special stop.
      */
     public static double reward(State start, dir action, State next) {
         double reward = 0;
-        if (transition(start, action, next) > 0) {
-            reward += Step_Cost;
-            int nextStateNum = next.getStateNum();
-            switch(nextStateNum) {
-                case 44:
-                case 45:
-                case 48:
-                case 49:
-                    reward += Neg_Reward;
-                    break;
-                case 28:
-                    reward += Pos_Reward;
-                    break;
-            }
+        reward += Step_Cost;
+        int nextStateNum = next.getStateNum();
+        switch(nextStateNum) {
+            case 44:
+            case 45:
+            case 48:
+            case 49:
+                reward += Neg_Reward;
+                break;
+            case 28:
+                reward += Pos_Reward;
+                break;
         }
         return reward;
     }
@@ -178,68 +281,26 @@ public class mdp {
      * to the next state. Has special cases for the key state at state 64.
      */
     public static double transition(State start, dir action, State next) {
-        //if start is 63 or 57 then it can reach 64 even though z coord is different
-        if ((start.getStateNum() == 63 || start.getStateNum() == 57) 
-        && next.getStateNum() == 64) {
-            switch(action) {//switch on action to check prob of getting from 63 or 57 to 64
-                case N://if going north check if next is above start
-                    if (start.getXCoord() - 1 == next.getXCoord()) return Forward_Prob;
-                    else if (start.getYCoord() + 1 == next.getYCoord()) return Clockwise_Prob;
-                    else if (start.getYCoord() - 1 == next.getYCoord()) return Counter_Prob;
-                    else return 0;
-                case S://if going south check if next is below start
-                    if (start.getXCoord() + 1 == next.getXCoord()) return Forward_Prob;
-                    else if (start.getYCoord() + 1 == next.getYCoord()) return Counter_Prob;
-                    else if (start.getYCoord() - 1 == next.getYCoord()) return Clockwise_Prob;
-                    else return 0;
-                case E://if going east check if next is to the right of start
-                    if (start.getYCoord() + 1 == next.getYCoord()) return Forward_Prob;
-                    else if (start.getXCoord() + 1 == next.getXCoord()) return Counter_Prob;
-                    else if (start.getXCoord() - 1 == next.getXCoord()) return Clockwise_Prob;
-                    else return 0;
-                case W://if going west check if next is to the left of start
-                    if (start.getYCoord() - 1 == next.getYCoord()) return Forward_Prob;
-                    else if (start.getXCoord() + 1 == next.getXCoord()) return Clockwise_Prob;
-                    else if (start.getXCoord() - 1 == next.getXCoord()) return Counter_Prob;
-                    else return 0;
-                default:
-                    System.out.println("invalid action");
-            }
-
-        }//check prob of reaching next from start for all non-special cases
-        switch(action) {//same switch statement as above with z coord check
-            case N:
-                if (start.getZCoord() == next.getZCoord()) {//check if z coords are the same
-                    if (start.getXCoord() - 1 == next.getXCoord()) return Forward_Prob;
-                    else if (start.getYCoord() + 1 == next.getYCoord()) return Clockwise_Prob;
-                    else if (start.getYCoord() - 1 == next.getYCoord()) return Counter_Prob;
-                }
-                return 0;
-            case S:
-                if (start.getZCoord() == next.getZCoord()) {
-                    if (start.getXCoord() + 1 == next.getXCoord()) return Forward_Prob;
-                    else if (start.getYCoord() + 1 == next.getYCoord()) return Counter_Prob;
-                    else if (start.getYCoord() - 1 == next.getYCoord()) return Clockwise_Prob;
-                }
-                return 0;
-            case E:
-                if (start.getZCoord() == next.getZCoord()) {
-                    if (start.getYCoord() + 1 == next.getYCoord()) return Forward_Prob;
-                    else if (start.getXCoord() + 1 == next.getXCoord()) return Counter_Prob;
-                    else if (start.getXCoord() - 1 == next.getXCoord()) return Clockwise_Prob;
-                }
-                return 0;
-            case W:
-                if (start.getZCoord() == next.getZCoord()) {
-                    if (start.getYCoord() - 1 == next.getYCoord()) return Forward_Prob;
-                    else if (start.getXCoord() + 1 == next.getXCoord()) return Clockwise_Prob;
-                    else if (start.getXCoord() - 1 == next.getXCoord()) return Counter_Prob;
-                }
-                return 0;
-            default:
-                System.out.println("invalid action");
-        }
-    return 0;
+        if (next == start.getNeighbor(action)) return Forward_Prob;
+        if (next == start.getNeighbor(action.clockwise())) return Clockwise_Prob;
+        if (next == start.getNeighbor(action.counter())) return Counter_Prob;
+        return 0;
     }
 
+    /**
+     * checks if a state is a terminal state
+     */
+    public static boolean terminal(State state) {
+        int num = state.getStateNum();
+        switch(num) {
+            case 28:
+            case 29:
+            case 44:
+            case 45:
+            case 48:
+            case 49:
+                return true;
+        }
+        return false;
+    }
 }

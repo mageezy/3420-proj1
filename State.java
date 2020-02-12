@@ -77,7 +77,6 @@ public class State {
     public int[] getCoords() {
         return coords;
     }
-    //neighbor stuff for potential future use.
     public void setNeighbor(mdp.dir dir, State state) {
         switch(dir) {
             case N:

@@ -49,6 +49,23 @@ public class State {
     }
 
     /**
+     * uses state number and coordinates to determine if two states are the same state
+     * @param state
+     * @return true if the input state is the same as the current state
+     */
+    public boolean equals(State state) {
+        int otherXCoord = state.getXCoord();
+        int otherYCoord = state.getYCoord();
+        int otherZCoord = state.getZCoord();
+        int otherStateNum = state.getStateNum();
+        if (this.getXCoord() == otherXCoord 
+        && this.getYCoord()== otherYCoord 
+        && this.getZCoord() == otherZCoord 
+        && stateNum == otherStateNum) return true;
+        else return false;
+    }
+
+    /**
      * Getters and Setters for State object variables.
      */
     public int getStateNum() {

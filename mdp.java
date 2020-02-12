@@ -281,9 +281,9 @@ public class mdp {
      * to the next state. Has special cases for the key state at state 64.
      */
     public static double transition(State start, dir action, State next) {
-        if (next == start.getNeighbor(action)) return Forward_Prob;
-        if (next == start.getNeighbor(action.clockwise())) return Clockwise_Prob;
-        if (next == start.getNeighbor(action.counter())) return Counter_Prob;
+        if (next.equals(start.getNeighbor(action))) return Forward_Prob;
+        if (next.equals(start.getNeighbor(action.clockwise()))) return Clockwise_Prob;
+        if (next.equals(start.getNeighbor(action.counter()))) return Counter_Prob;
         return 0;
     }
 

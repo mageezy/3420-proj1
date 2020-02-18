@@ -8,6 +8,8 @@ public class State {
     //variables necessary for a state object
     private int stateNum;
     private int[] coords = new int[3];
+    private double reward;
+    private double value;
     //variables that can be set
     private mdp.dir optMove;
     private State north = null;
@@ -21,7 +23,8 @@ public class State {
      */
     public State(int stateNum) {
         this.stateNum = stateNum;
-        this.optMove = null;
+        optMove = null;
+        value = 0;
     }
 
     /**
@@ -36,6 +39,8 @@ public class State {
         this.coords[0] = x;
         this.coords[1] = y;
         this.coords[2] = z;
+        optMove = null;
+        value = 0;
     }
 
     /**
@@ -43,8 +48,10 @@ public class State {
      * so as to be printed nicely.
      */
     public String toString() {
-        String string = "State: ";
-        string += stateNum;
+        String string = "(" + stateNum + ") ";
+        if (value >= 0) string += " ";
+        string += String.format("%.2f", value);
+        string += " (" + optMove + ")";
         return string;
     }
 
@@ -93,6 +100,18 @@ public class State {
     }
     public int[] getCoords() {
         return coords;
+    }
+    public void setReward(double reward) {
+        this.reward = reward;
+    }
+    public double getReward() {
+        return reward;
+    }
+    public void setValue(double value) {
+        this.value = value;
+    }
+    public double getValue() {
+        return value;
     }
     public void setNeighbor(mdp.dir dir, State state) {
         switch(dir) {

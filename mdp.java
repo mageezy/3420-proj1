@@ -6,10 +6,6 @@ import java.lang.Math;
  */
 public class mdp {
 
-//TODO
-//maybe write function to build 3d array of transition function answers and reward answers
-//instead of calling the functions every time.
-
     //==========  Global Variables  ==========
 
     public static double Discount_Factor = 1;
@@ -330,11 +326,12 @@ public class mdp {
      * to the next state. Has special cases for the key state at state 64.
      */
     public static double transition(State start, dir action, State next) {
-        if (terminal(start)) return 0;
-        if (next.equals(start.getNeighbor(action))) return Forward_Prob;
-        if (next.equals(start.getNeighbor(action.clockwise()))) return Clockwise_Prob;
-        if (next.equals(start.getNeighbor(action.counter()))) return Counter_Prob;
-        return 0;
+        double prob = 0;
+        if (terminal(start)) return prob;
+        if (next.equals(start.getNeighbor(action))) prob += Forward_Prob;
+        if (next.equals(start.getNeighbor(action.clockwise()))) prob =+ Clockwise_Prob;
+        if (next.equals(start.getNeighbor(action.counter()))) prob += Counter_Prob;
+        return prob;
     }
 
     /**
@@ -362,10 +359,9 @@ public class mdp {
                 while (cont) {
                     System.out.println("iter: " + iters);
                     double maxChange = valueIter();
-                    printGameBoard();
+                    // printGameBoard();
                     iters++;
                     if (maxChange <= (Max_Error * (1-Discount_Factor)/Discount_Factor)) cont = false;
-                    if (iters > 25) cont = false;
                 } 
                 break;
             case 'p':
@@ -393,8 +389,12 @@ public class mdp {
                 State clockwise = state.getNeighbor(direction.clockwise());
                 //calculate total utility of each of those neighbors
                 double utility = (transition(state, direction, direct) * direct.getValue());
+                if (!direct.equals(counter)) {
                 utility += (transition(state, direction, counter) * counter.getValue());
+                }
+                if (!direct.equals(clockwise) && !counter.equals(clockwise)) { 
                 utility += (transition(state, direction, clockwise) * clockwise.getValue());
+                }
                 //if this is the best direction update the current direction and value
                 if (utility > bestDirVal) {
                     bestDirVal = utility;

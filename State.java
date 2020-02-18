@@ -48,7 +48,9 @@ public class State {
      * so as to be printed nicely.
      */
     public String toString() {
-        String string = "(" + stateNum + ") ";
+        String string = "(";
+        if (stateNum < 10) string += " ";
+        string += stateNum + ") ";
         if (value >= 0) string += " ";
         string += String.format("%.2f", value);
         string += " (" + optMove + ")";

@@ -9,7 +9,7 @@ public class mdp {
     //==========  Global Variables  ==========
 
     public static double Discount_Factor = 1;
-    public static double Max_Error = 0;
+    public static double Max_Error = 1.0E-6;
     public static double Pos_Reward = 1;
     public static double Neg_Reward = -1;
     public static double Step_Cost = -.04;
@@ -101,11 +101,11 @@ public class mdp {
         // double item4 = reward(states[8], dir.E, states[10]);//should be -.04
         // double item5 = reward(states[62], dir.N, states[62]);//should be -.04
 
-        // //neighbor test functions.
-        // State nbor1 = states[63].getNeighbor(dir.E);//should be 64
-        // State nbor2 = states[30].getNeighbor(dir.W);//should be 30
-        // State nbor3 = states[48].getNeighbor(dir.S);//should be 48
-        // State nbor4 = states[52].getNeighbor(dir.N);//should be 60
+        //neighbor test functions.
+        // State nbor1 = states[59].getNeighbor(dir.E);//should be 61
+        // State nbor2 = states[59].getNeighbor(dir.W);//should be 59
+        // State nbor3 = states[59].getNeighbor(dir.S);//should be 51
+        // State nbor4 = states[59].getNeighbor(dir.N);//should be 59
         
         // //print out transition tests
         // System.out.println("\n===== Transition Tests =====");
@@ -123,7 +123,7 @@ public class mdp {
         // System.out.println(item4);
         // System.out.println(item5);
 
-        // //print out neighbor tests.
+        //print out neighbor tests.
         // System.out.println("\n===== Neighbor Tests =====");
         // System.out.println(nbor1);
         // System.out.println(nbor2);
@@ -328,9 +328,16 @@ public class mdp {
     public static double transition(State start, dir action, State next) {
         double prob = 0;
         if (terminal(start)) return prob;
+        if ((start.getStateNum() % 2 == 0) && (next.getStateNum() == 41)) {
+            if (next.getNeighbor(action).equals(states[40])) prob += Forward_Prob;
+            if (next.getNeighbor(action.clockwise()).equals(states[40])) prob += Clockwise_Prob;
+            if (next.getNeighbor(action.counter()).equals(states[40])) prob += Counter_Prob;
+            prob *= Key_Loss_Prob;
+        }
         if (next.equals(start.getNeighbor(action))) prob += Forward_Prob;
-        if (next.equals(start.getNeighbor(action.clockwise()))) prob =+ Clockwise_Prob;
+        if (next.equals(start.getNeighbor(action.clockwise()))) prob += Clockwise_Prob;
         if (next.equals(start.getNeighbor(action.counter()))) prob += Counter_Prob;
+        if (next.equals(states[40])) prob *= 1-Key_Loss_Prob;
         return prob;
     }
 
@@ -394,6 +401,9 @@ public class mdp {
                 }
                 if (!direct.equals(clockwise) && !counter.equals(clockwise)) { 
                 utility += (transition(state, direction, clockwise) * clockwise.getValue());
+                }
+                if (direct.equals(states[40]) || counter.equals(states[40]) || clockwise.equals(states[40])) {
+                    utility += (transition(state, direction, states[41]) * states[41].getValue());
                 }
                 //if this is the best direction update the current direction and value
                 if (utility > bestDirVal) {

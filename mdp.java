@@ -17,7 +17,7 @@ public class mdp {
     public static double Forward_Prob = .8;
     public static double Clockwise_Prob = .1;
     public static double Counter_Prob = .1;
-    public static int iters = 0;
+    public static int Iters = 0;
     //private static double[][][] Rewards = new double[65][65][4];
     //private static double[][][] Transition = new double[65][65][4];
     private static State[][][] Game_Board= new State[5][15][2];//odds z = 1, evens z = 0
@@ -85,7 +85,7 @@ public class mdp {
 
         printGameBoard();
         solveMDP('v');
-        System.out.println();
+        printParams();
         printGameBoard();
         //test functions for the transition function.
         // double prob1 = transition(states[62], dir.W, states[62]);//should be .1
@@ -235,6 +235,18 @@ public class mdp {
         System.out.println();
     }
 
+    public static void printParams() {
+        System.out.println("\n========== Parameters ==========");
+        System.out.println(" Discount Factor: " + Discount_Factor);
+        System.out.println(" Maximum State Error: " + Max_Error);
+        System.out.println(" Key Loss Probability: " + Key_Loss_Prob);
+        System.out.println(" Positive Terminal State Reward: " + Pos_Reward);
+        System.out.println(" Negative Terminal State Reward: " + Neg_Reward);
+        System.out.println(" Step Cost: " + Step_Cost + "\n");
+        System.out.println("Iterations: " + Iters);
+        System.out.println();
+    }
+
     /**
      * This function generates an array of state values where the state number is the states index
      * in the array. this allows easier access for test functions and assigning neighbors.
@@ -337,7 +349,7 @@ public class mdp {
         if (next.equals(start.getNeighbor(action))) prob += Forward_Prob;
         if (next.equals(start.getNeighbor(action.clockwise()))) prob += Clockwise_Prob;
         if (next.equals(start.getNeighbor(action.counter()))) prob += Counter_Prob;
-        if (next.equals(states[40])) prob *= 1-Key_Loss_Prob;
+        if (next.equals(states[40])) prob *= (1-Key_Loss_Prob);
         return prob;
     }
 
@@ -364,11 +376,11 @@ public class mdp {
                 //do value iteration!
                 boolean cont = true;
                 while (cont) {
-                    System.out.println("iter: " + iters);
                     double maxChange = valueIter();
                     // printGameBoard();
-                    iters++;
+                    Iters++;
                     if (maxChange <= (Max_Error * (1-Discount_Factor)/Discount_Factor)) cont = false;
+                    if (Iters == 61) cont = false;
                 } 
                 break;
             case 'p':

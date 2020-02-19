@@ -8,6 +8,7 @@ public class mdp {
 
     //==========  Global Variables  ==========
 
+    public static char Sol_Type = 'v';
     public static double Discount_Factor = 1;
     public static double Max_Error = 1.0E-6;
     public static double Pos_Reward = 1;
@@ -84,7 +85,7 @@ public class mdp {
 
 
         printGameBoard();
-        solveMDP('v');
+        solveMDP(Sol_Type);
         printParams();
         printGameBoard();
         //test functions for the transition function.

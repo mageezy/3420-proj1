@@ -67,6 +67,7 @@ public class State {
         int otherYCoord = state.getYCoord();
         int otherZCoord = state.getZCoord();
         int otherStateNum = state.getStateNum();
+
         if (this.getXCoord() == otherXCoord 
         && this.getYCoord()== otherYCoord 
         && this.getZCoord() == otherZCoord 
@@ -115,6 +116,11 @@ public class State {
     public double getValue() {
         return value;
     }
+    /**
+     * set input neighbor to an input direction
+     * @param dir the direction or side that this neighbor is on
+     * @param state the reference to the state object
+     */
     public void setNeighbor(mdp.dir dir, State state) {
         switch(dir) {
             case N:
@@ -134,6 +140,9 @@ public class State {
 
         }
     }
+    /**
+     * gets the neighbor at the input direction or side
+     */
     public State getNeighbor(mdp.dir dir) {
         switch (dir) {
             case N:

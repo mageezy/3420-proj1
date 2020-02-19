@@ -203,9 +203,17 @@ public class mdp {
         Game_Board[0][3][0] = new State(64, 0, 3, 0);
     }
 
+    /**
+     * Prints out a string representation of the game board to the console. Each state is formatted
+     * by the state .toString method. prints out the states in the shape of the gameboard, with a break
+     * after the 7th column of states in the bottom row to make it more readable.
+     */
     public static void printGameBoard() {
+        //iterate through each row
         for (int x = 0; x < 5; x++) {
+            //if its the bottom row it is real wide so split it in 2
             if (x == 4) {
+                //print out the first 8 pairs in row 4
                 for (int z = 0; z < 2; z++) {
                     for (int y = 0; y < 8; y++) {
                         System.out.print(Game_Board[x][y][z] + "  ");
@@ -213,6 +221,7 @@ public class mdp {
                     System.out.println();
                 }
                 System.out.println();
+                //print out the next 7 pairs in row 4
                 for (int z = 0; z < 2; z++) {
                     System.out.print("   ");
                     for (int y = 8; y < 15; y++) {
@@ -220,7 +229,7 @@ public class mdp {
                     }
                     System.out.println();
                 }
-            } else {
+            } else {//the other rows have fewer states so no break needed
                 for (int z = 0; z < 2; z++) {
                     for (int y = 0; y < 15; y++) {
                         if (Game_Board[x][y][z] != null) {
@@ -235,6 +244,9 @@ public class mdp {
         System.out.println();
     }
 
+    /**
+     * prints out all the parameters used in creating a solution for this MDP.
+     */
     public static void printParams() {
         System.out.println("\n========== Parameters ==========");
         System.out.println(" Discount Factor: " + Discount_Factor);
@@ -304,28 +316,32 @@ public class mdp {
         }
     }
     /**
-     * Calculates the reward for going from state start to state next with specified action
-     * if the action will not go from start to next then it returns 0, otherwise it returns
-     * the step cost added to whatever reward may be at a special state.
+     * Calculates the reward of the input state. Each state has a reward of the step cost
+     * unless the state is one of the terminal states. there is a switch statement to
+     * take care of all special cases.
      */
     public static double reward(State state) {
         double reward = 0;
         reward += Step_Cost;
         switch(state.getStateNum()) {
-            case 44:
+            case 44://any of the negative terminal states
             case 45:
             case 48:
             case 49:
                 reward = Neg_Reward;
                 break;
-            case 28:
+            case 28://the only positive terminal state
                 reward = Pos_Reward;
                 break;
         }
         return reward;
     }
     
+    /**
+     * Set the reward variable in each state to it's reward so the reward for a state is easy to access.
+     */
     public static void setRewards() {
+        //iterate through every initialized state
         for (State state : states) {
             double reward = reward(state);
             state.setReward(reward);
@@ -335,20 +351,28 @@ public class mdp {
 
     /**
      * Return the probability that the specified action takes the agent from the start state
-     * to the next state. Has special cases for the key state at state 64.
+     * to the next state. Jas a special case for terminal states, which have a 0% chance of moving
+     * anywhere. Has a special case for even states trying to move to state 41, which is possible
+     * because of the key loss probability. Has a special case for moving to state 40, where the
+     * probability is decreased because of the key loss probability
      */
     public static double transition(State start, dir action, State next) {
         double prob = 0;
+        //if terminal return 0
         if (terminal(start)) return prob;
+        //if the starting state is an even state and it is going to 41
         if ((start.getStateNum() % 2 == 0) && (next.getStateNum() == 41)) {
+            //calculate the chance of the starting state to go to 40
             if (next.getNeighbor(action).equals(states[40])) prob += Forward_Prob;
             if (next.getNeighbor(action.clockwise()).equals(states[40])) prob += Clockwise_Prob;
             if (next.getNeighbor(action.counter()).equals(states[40])) prob += Counter_Prob;
-            prob *= Key_Loss_Prob;
+            prob *= Key_Loss_Prob;//multiply by the key loss prob
         }
+        //calculate prob of starting state going to next state with all directions
         if (next.equals(start.getNeighbor(action))) prob += Forward_Prob;
         if (next.equals(start.getNeighbor(action.clockwise()))) prob += Clockwise_Prob;
         if (next.equals(start.getNeighbor(action.counter()))) prob += Counter_Prob;
+        //if going to state 40 multiply by 1-key loss probability
         if (next.equals(states[40])) prob *= (1-Key_Loss_Prob);
         return prob;
     }
@@ -370,17 +394,22 @@ public class mdp {
         return false;
     }
 
+    /**
+     * takes a character input to determine which solution technique should be used in solving
+     * the MDP. so far only value iteration has been implemented. calls valueIter function to do
+     * the main work in value iteration
+     * @param solType
+     */
     public static void solveMDP(char solType) {
         switch(solType) {
             case 'v':
-                //do value iteration!
                 boolean cont = true;
-                while (cont) {
+                while (cont) {//do value iteration until the stop criterion is reached
                     double maxChange = valueIter();
                     // printGameBoard();
                     Iters++;
+                    //check stop criterion
                     if (maxChange <= (Max_Error * (1-Discount_Factor)/Discount_Factor)) cont = false;
-                    if (Iters == 61) cont = false;
                 } 
                 break;
             case 'p':
@@ -394,11 +423,18 @@ public class mdp {
         }
     }
 
+    /**
+     * executes an iteration of value iteration solution technique. iterates through every
+     * state and updates the current value of the state based off of the values of the states
+     * it can reach through its best possible action. calculates the maximum change in a value of
+     * a state throughout the iteration and stores this value to check stop criterion.
+     * @return the maximum change in value (utility) of a state
+     */
     public static double valueIter() {
-        double maxUChange = 0;
+        double maxUChange = 0;//to store maximum value change
         //iterate through every state
         for (State state : states) {
-            double bestDirVal = -Double.MAX_VALUE;
+            double bestDirVal = -Double.MAX_VALUE;//so that it definitely gets updated
             dir bestDir = null;
             //iterate through each possible action
             for (dir direction: dir.values()) {
@@ -408,12 +444,15 @@ public class mdp {
                 State clockwise = state.getNeighbor(direction.clockwise());
                 //calculate total utility of each of those neighbors
                 double utility = (transition(state, direction, direct) * direct.getValue());
+                //make sure counter neighbor hasn't already been checked
                 if (!direct.equals(counter)) {
                 utility += (transition(state, direction, counter) * counter.getValue());
                 }
+                //make sure clockwise neighbor hasn't already been checked
                 if (!direct.equals(clockwise) && !counter.equals(clockwise)) { 
                 utility += (transition(state, direction, clockwise) * clockwise.getValue());
                 }
+                //if one of the possible states is 40, then the key loss prob means 41 is also possible
                 if (direct.equals(states[40]) || counter.equals(states[40]) || clockwise.equals(states[40])) {
                     utility += (transition(state, direction, states[41]) * states[41].getValue());
                 }

@@ -6,25 +6,51 @@ import java.lang.Math;
  */
 public class mdp {
 
-    //==========  Global Variables  ==========
+    //===============  Global Variables  ===============
 
-    public static char Sol_Type = 'v';
+    //specifiable here or at command line
     public static double Discount_Factor = 1;
     public static double Max_Error = 1.0E-6;
     public static double Pos_Reward = 1;
     public static double Neg_Reward = -1;
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
+    public static char Sol_Type = 'v';
+
+    //specifiable only here
     public static double Forward_Prob = .8;
     public static double Clockwise_Prob = .1;
     public static double Counter_Prob = .1;
-    public static int Iters = 0;
-    //private static double[][][] Rewards = new double[65][65][4];
-    //private static double[][][] Transition = new double[65][65][4];
-    private static State[][][] Game_Board= new State[5][15][2];//odds z = 1, evens z = 0
-    private static State[] states = new State[65];
 
-    //enums to keep directions mapped to one specific value.
+    //not to be changed
+    private static State[][][] Game_Board= new State[5][15][2];//odds z = 1, evens z = 0
+    private static State[] States = new State[65];
+    private static int Iters = 0;
+    private static long totalTime = 0;
+    private static final String Help_Message = 
+    "======================== Help Message ========================\n"
+    + "When using arguments specified in function run without any arguments\n"
+    + "When inputting arguments from command line follow following format:\n"
+    + "   java mdp Discount[double] Max_Error[double] key_loss_probability[double]\n"
+    + "   pos_reward[double] neg_reward[double] step_cost[double] solution_technique[char]\n"
+    + "\n ---------- common values / value options ----------\n"
+    + "Discount: between 1 and 0, otherwise values go to infinity\n"
+    + "Max_Error: often close to 0, higher value will mean fewer iterations\n"
+    + "Key_loss_probability: usually .5, must be between 1 and 0\n"
+    + "pos_reward: anything positive, bigger value will overshadow negative reward and step costs\n"
+    + "neg_reward: anything negative, bigger value will overshadow positive reward\n"
+    + "step_cost: generally negative, if positive terminal states will be avoided\n"
+    + "solution_technique: 'v' for value iteration, 'p' for policy iteration, 'q' for Q-learning\n"
+    + "===============================================================";
+
+    //for debugging
+    private static double[][][] Transitions = new double[65][65][4];
+
+    /**
+     * A Direction Enum to make specifiec functions for retrieving the clockwise and counter
+     * clockwise directions of a direction easily, and for mapping each direction to a value
+     * that can be used for population debugging arrays.
+     */
     public enum dir {
         N(0),
         S(1),
@@ -71,6 +97,8 @@ public class mdp {
         }
     }
 
+    //---------- Start of Functions ---------
+
     /**
      * Generates a game board, populates an array of every state, initializes every states
      * neighbors, and then runs test cases on reward function, transition function, and 
@@ -78,59 +106,49 @@ public class mdp {
      * @param args
      */
     public static void main(String [] args) {
-        generateBoard();
-        genStateArray();
-        genNeighbors();
-        setRewards();
+        //if help is entered output help message and then end the program
+        if ((args.length > 0) && (args[0].equals("help"))) {
+            System.out.println(Help_Message);
+        } else {//if help is not called run the program
+            if (args.length > 0) {//if arguments are input on command line change parameters
+                try {
+                    Discount_Factor = Double.parseDouble(args[0]);
+                    Max_Error = Double.parseDouble(args[1]);
+                    Key_Loss_Prob = Double.parseDouble(args[2]);
+                    Pos_Reward = Double.parseDouble(args[3]);
+                    Neg_Reward = Double.parseDouble(args[4]);
+                    Step_Cost = Double.parseDouble(args[5]);
+                    Sol_Type = args[6].charAt(0);
+                } catch (NumberFormatException e) {
+                    System.out.println("ERROR: Bad input");
+                    System.out.println("call \"java mdp help\" for a help message");
+                } catch (IndexOutOfBoundsException e) {
+                    System.out.println("ERROR: Too many arguments entered");
+                    System.out.println("call \"java mdp help\" for a help message");
+                }
+            }
+            generateBoard();
+            genStateArray();
+            genNeighbors();
+            setRewards();
 
+            // genTransitionArray();//for debugging purposes
+            // testFunctions();//for debugging purposes
 
-        printGameBoard();
-        solveMDP(Sol_Type);
-        printParams();
-        printGameBoard();
-        //test functions for the transition function.
-        // double prob1 = transition(states[62], dir.W, states[62]);//should be .1
-        // double prob2 = transition(states[63], dir.E, states[64]);//should be .8
-        // double prob3 = transition(states[44], dir.E, states[46]);//should be 0
-        // double prob4 = transition(states[1], dir.W, states[1]);//should be .8
-        // double prob5 = transition(states[32], dir.N, states[34]);//should be .1
-
-        // //test functions for the reward function.
-        // double item1 = reward(states[26], dir.E, states[28]);//should be .96
-        // double item2 = reward(states[27], dir.W, states[29]);//should be -.04
-        // double item3 = reward(states[46], dir.W, states[44]);//should be -1.04
-        // double item4 = reward(states[8], dir.E, states[10]);//should be -.04
-        // double item5 = reward(states[62], dir.N, states[62]);//should be -.04
-
-        //neighbor test functions.
-        // State nbor1 = states[59].getNeighbor(dir.E);//should be 61
-        // State nbor2 = states[59].getNeighbor(dir.W);//should be 59
-        // State nbor3 = states[59].getNeighbor(dir.S);//should be 51
-        // State nbor4 = states[59].getNeighbor(dir.N);//should be 59
-        
-        // //print out transition tests
-        // System.out.println("\n===== Transition Tests =====");
-        // System.out.println(prob1);
-        // System.out.println(prob2);
-        // System.out.println(prob3);
-        // System.out.println(prob4);
-        // System.out.println(prob5);
-
-        // //print out reward tests.
-        // System.out.println("\n===== Reward Tests =====");
-        // System.out.println(item1);
-        // System.out.println(item2);
-        // System.out.println(item3);
-        // System.out.println(item4);
-        // System.out.println(item5);
-
-        //print out neighbor tests.
-        // System.out.println("\n===== Neighbor Tests =====");
-        // System.out.println(nbor1);
-        // System.out.println(nbor2);
-        // System.out.println(nbor3);
-        // System.out.println(nbor4);
+            long startTime = System.currentTimeMillis();
+            int worked = solveMDP(Sol_Type);
+            long endTime = System.currentTimeMillis();
+            totalTime = endTime - startTime;
+            if (worked == 0) {
+                printParams();
+                printGameBoard();
+            }
+        }
     }
+
+
+    //---------- Generating necessary state objects and the data they need ----------
+
 
     /**
      * This function hardcodes every state with its respective coordinates and 
@@ -205,6 +223,67 @@ public class mdp {
     }
 
     /**
+     * This function generates an array of state values where the state number is the states index
+     * in the array. this allows easier access for test functions and assigning neighbors.
+     */
+    public static void genStateArray() {
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 15; y++) {
+                for (int z = 0; z < 2; z++) {
+                    State state = Game_Board[x][y][z];
+                    if (state != null) {
+                        States[state.getStateNum()] = state;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * this function assignes every state 4 neighbor states, one for each possible direction.
+     * terminal cases have themselves as all neighbors, and wall cases have themselves for the
+     * neighbor in the direction of the wall.
+     */
+    public static void genNeighbors() {
+        for (State state : States) {
+            //if terminal state it can't go anywhere.
+            if (terminal(state)) {
+                state.setNeighbor(dir.N, state);
+                state.setNeighbor(dir.S, state);
+                state.setNeighbor(dir.E, state);
+                state.setNeighbor(dir.W, state);
+            } else {//if not terminal state set neighbors normally
+                int x = state.getXCoord();
+                int y = state.getYCoord();
+                int z = state.getZCoord();
+                //set south neighbor
+                if ((x < 4) && (Game_Board[x+1][y][z] != null)) {
+                    state.setNeighbor(dir.S, Game_Board[x+1][y][z]);
+                } else state.setNeighbor(dir.S, state);
+                //set north neighbor
+                if ((x > 0) && (Game_Board[x-1][y][z] != null)) {
+                    state.setNeighbor(dir.N, Game_Board[x-1][y][z]);
+                } else state.setNeighbor(dir.N, state);
+                //set east neighbor
+                if ((y < 14) && (Game_Board[x][y+1][z] != null)) {
+                    state.setNeighbor(dir.E, Game_Board[x][y+1][z]);
+                } else state.setNeighbor(dir.E, state);
+                //set west neighbor
+                if ((y > 0) && (Game_Board[x][y-1][z] != null)) {
+                    state.setNeighbor(dir.W, Game_Board[x][y-1][z]);
+                } else state.setNeighbor(dir.W, state);
+            } 
+            //set special cases for 63 and 57 going to key state 64
+            if (state.getStateNum() == 63) state.setNeighbor(dir.E, States[64]);
+            if (state.getStateNum() == 57) state.setNeighbor(dir.N, States[64]);
+        }
+    }
+
+
+    // ----------  Functions to print the gameboard and the parameters ----------
+
+
+    /**
      * Prints out a string representation of the game board to the console. Each state is formatted
      * by the state .toString method. prints out the states in the shape of the gameboard, with a break
      * after the 7th column of states in the bottom row to make it more readable.
@@ -255,67 +334,17 @@ public class mdp {
         System.out.println(" Key Loss Probability: " + Key_Loss_Prob);
         System.out.println(" Positive Terminal State Reward: " + Pos_Reward);
         System.out.println(" Negative Terminal State Reward: " + Neg_Reward);
-        System.out.println(" Step Cost: " + Step_Cost + "\n");
-        System.out.println("Iterations: " + Iters);
+        System.out.println(" Step Cost: " + Step_Cost);
+        System.out.println(" Solution Technique: " + Sol_Type + "\n");
+        System.out.println(" Iterations: " + Iters);
+        System.out.println(" Time: " + totalTime + " milliseconds");
         System.out.println();
     }
 
-    /**
-     * This function generates an array of state values where the state number is the states index
-     * in the array. this allows easier access for test functions and assigning neighbors.
-     */
-    public static void genStateArray() {
-        for (int x = 0; x < 5; x++) {
-            for (int y = 0; y < 15; y++) {
-                for (int z = 0; z < 2; z++) {
-                    State state = Game_Board[x][y][z];
-                    if (state != null) {
-                        states[state.getStateNum()] = state;
-                    }
-                }
-            }
-        }
-    }
 
-    /**
-     * this function assignes every state 4 neighbor states, one for each possible direction.
-     * terminal cases have themselves as all neighbors, and wall cases have themselves for the
-     * neighbor in the direction of the wall.
-     */
-    public static void genNeighbors() {
-        for (State state : states) {
-            //if terminal state it can't go anywhere.
-            if (terminal(state)) {
-                state.setNeighbor(dir.N, state);
-                state.setNeighbor(dir.S, state);
-                state.setNeighbor(dir.E, state);
-                state.setNeighbor(dir.W, state);
-            } else {//if not terminal state set neighbors normally
-                int x = state.getXCoord();
-                int y = state.getYCoord();
-                int z = state.getZCoord();
-                //set south neighbor
-                if ((x < 4) && (Game_Board[x+1][y][z] != null)) {
-                    state.setNeighbor(dir.S, Game_Board[x+1][y][z]);
-                } else state.setNeighbor(dir.S, state);
-                //set north neighbor
-                if ((x > 0) && (Game_Board[x-1][y][z] != null)) {
-                    state.setNeighbor(dir.N, Game_Board[x-1][y][z]);
-                } else state.setNeighbor(dir.N, state);
-                //set east neighbor
-                if ((y < 14) && (Game_Board[x][y+1][z] != null)) {
-                    state.setNeighbor(dir.E, Game_Board[x][y+1][z]);
-                } else state.setNeighbor(dir.E, state);
-                //set west neighbor
-                if ((y > 0) && (Game_Board[x][y-1][z] != null)) {
-                    state.setNeighbor(dir.W, Game_Board[x][y-1][z]);
-                } else state.setNeighbor(dir.W, state);
-            } 
-            //set special cases for 63 and 57 going to key state 64
-            if (state.getStateNum() == 63) state.setNeighbor(dir.E, states[64]);
-            if (state.getStateNum() == 57) state.setNeighbor(dir.N, states[64]);
-        }
-    }
+    //---------- Functions to calculate and set Rewards ----------
+
+
     /**
      * Calculates the reward of the input state. Each state has a reward of the step cost
      * unless the state is one of the terminal states. there is a switch statement to
@@ -343,12 +372,16 @@ public class mdp {
      */
     public static void setRewards() {
         //iterate through every initialized state
-        for (State state : states) {
+        for (State state : States) {
             double reward = reward(state);
             state.setReward(reward);
             state.setOptMove(dir.N);
         }
     }
+
+
+    //---------- Functions for moving from one state to another ----------
+
 
     /**
      * Return the probability that the specified action takes the agent from the start state
@@ -364,9 +397,9 @@ public class mdp {
         //if the starting state is an even state and it is going to 41
         if ((start.getStateNum() % 2 == 0) && (next.getStateNum() == 41)) {
             //calculate the chance of the starting state to go to 40
-            if (next.getNeighbor(action).equals(states[40])) prob += Forward_Prob;
-            if (next.getNeighbor(action.clockwise()).equals(states[40])) prob += Clockwise_Prob;
-            if (next.getNeighbor(action.counter()).equals(states[40])) prob += Counter_Prob;
+            if (start.getNeighbor(action).equals(States[40])) prob += Forward_Prob;
+            if (start.getNeighbor(action.clockwise()).equals(States[40])) prob += Clockwise_Prob;
+            if (start.getNeighbor(action.counter()).equals(States[40])) prob += Counter_Prob;
             prob *= Key_Loss_Prob;//multiply by the key loss prob
         }
         //calculate prob of starting state going to next state with all directions
@@ -374,7 +407,7 @@ public class mdp {
         if (next.equals(start.getNeighbor(action.clockwise()))) prob += Clockwise_Prob;
         if (next.equals(start.getNeighbor(action.counter()))) prob += Counter_Prob;
         //if going to state 40 multiply by 1-key loss probability
-        if (next.equals(states[40])) prob *= (1-Key_Loss_Prob);
+        if (next.equals(States[40])) prob *= (1-Key_Loss_Prob);
         return prob;
     }
 
@@ -395,13 +428,17 @@ public class mdp {
         return false;
     }
 
+
+    //--------- Functions to solve the MDP ---------
+
+
     /**
      * takes a character input to determine which solution technique should be used in solving
      * the MDP. so far only value iteration has been implemented. calls valueIter function to do
      * the main work in value iteration
      * @param solType
      */
-    public static void solveMDP(char solType) {
+    public static int solveMDP(char solType) {
         switch(solType) {
             case 'v':
                 boolean cont = true;
@@ -412,15 +449,17 @@ public class mdp {
                     //check stop criterion
                     if (maxChange <= (Max_Error * (1-Discount_Factor)/Discount_Factor)) cont = false;
                 } 
-                break;
+                return 0;
             case 'p':
                 //do policy iteration!
-                break;
+                return 0;
             case 'q':
                 //do Q-learning!
-                break;
+                return 0;
             default:
-                System.out.println("invalid solution technique, please enter \"v\", \"p\", or \"q\"");
+                System.out.println("ERROR: invalid solution technique");
+                System.out.println("call \"java mdp help\" for a help message");
+                return 1;
         }
     }
 
@@ -434,7 +473,7 @@ public class mdp {
     public static double valueIter() {
         double maxUChange = 0;//to store maximum value change
         //iterate through every state
-        for (State state : states) {
+        for (State state : States) {
             double bestDirVal = -Double.MAX_VALUE;//so that it definitely gets updated
             dir bestDir = null;
             //iterate through each possible action
@@ -454,8 +493,8 @@ public class mdp {
                 utility += (transition(state, direction, clockwise) * clockwise.getValue());
                 }
                 //if one of the possible states is 40, then the key loss prob means 41 is also possible
-                if (direct.equals(states[40]) || counter.equals(states[40]) || clockwise.equals(states[40])) {
-                    utility += (transition(state, direction, states[41]) * states[41].getValue());
+                if (direct.equals(States[40]) || counter.equals(States[40]) || clockwise.equals(States[40])) {
+                    utility += (transition(state, direction, States[41]) * States[41].getValue());
                 }
                 //if this is the best direction update the current direction and value
                 if (utility > bestDirVal) {
@@ -474,5 +513,78 @@ public class mdp {
         }
         //return the maximum change in utility
         return maxUChange;
+    }
+
+
+    //---------- Debugging Functions ----------
+
+
+    /**
+     * this function populates the array of transition values for every state to every other state
+     * for every action. **used only for debugging**
+     */
+    public static void genTransitionArray() {
+        for (State start: States) {
+            for (State next: States) {
+                for (dir direction: dir.values()) {
+                    int startNum = start.getStateNum();
+                    int nextNum = next.getStateNum();
+                    Transitions[startNum][nextNum][direction.val] = transition(start, direction, next);
+                    if (nextNum == 40) {
+                        Transitions[startNum][41][direction.val] = transition(start, direction, States[41]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Function that calls lots of tests on various objects and data structures used in this
+     * program. Used purely to make sure different things are working, has no function in
+     * the program.
+     */
+    public static void testFunctions() {
+        //test functions for the transition function.
+        double prob1 = transition(States[62], dir.W, States[62]);//should be .1
+        double prob2 = transition(States[63], dir.E, States[64]);//should be .8
+        double prob3 = transition(States[44], dir.E, States[46]);//should be 0
+        double prob4 = transition(States[30], dir.N, States[40]);//should be .4
+        double prob5 = transition(States[30], dir.N, States[41]);//should be .4
+
+        // //test functions for the reward function.
+        double item1 = reward(States[28]);//should be 1
+        double item2 = reward(States[29]);//should be -.04
+        double item3 = reward(States[44]);//should be -1
+        double item4 = reward(States[10]);//should be -.04
+        double item5 = reward(States[62]);//should be -.04
+
+        //neighbor test functions.
+        State nbor1 = States[59].getNeighbor(dir.E);//should be 61
+        State nbor2 = States[59].getNeighbor(dir.W);//should be 59
+        State nbor3 = States[59].getNeighbor(dir.S);//should be 51
+        State nbor4 = States[59].getNeighbor(dir.N);//should be 59
+        
+        //print out transition tests
+        System.out.println("\n===== Transition Tests =====");
+        System.out.println(prob1);
+        System.out.println(prob2);
+        System.out.println(prob3);
+        System.out.println(prob4);
+        System.out.println(prob5);
+
+        //print out reward tests.
+        System.out.println("\n===== Reward Tests =====");
+        System.out.println(item1);
+        System.out.println(item2);
+        System.out.println(item3);
+        System.out.println(item4);
+        System.out.println(item5);
+
+        //print out neighbor tests.
+        System.out.println("\n===== Neighbor Tests =====");
+        System.out.println(nbor1);
+        System.out.println(nbor2);
+        System.out.println(nbor3);
+        System.out.println(nbor4);
     }
 }

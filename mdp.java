@@ -25,6 +25,8 @@ public class mdp {
     //not to be changed
     private static State[][][] Game_Board= new State[5][15][2];//odds z = 1, evens z = 0
     private static State[] States = new State[65];
+    private static double[][] Matrix_Array;//for policy iteration
+    private static double[][] Matrix_Rewards;//for policy iteration
     private static int Iters = 0;
     private static long totalTime = 0;
     private static final String Help_Message = 
@@ -439,9 +441,10 @@ public class mdp {
      * @param solType
      */
     public static int solveMDP(char solType) {
+        boolean cont;
         switch(solType) {
             case 'v':
-                boolean cont = true;
+                cont = true;
                 while (cont) {//do value iteration until the stop criterion is reached
                     double maxChange = valueIter();
                     // printGameBoard();
@@ -451,7 +454,17 @@ public class mdp {
                 } 
                 return 0;
             case 'p':
-                //do policy iteration!
+                cont = true;
+                while (cont) {
+                    genPolicyMatrix();
+                    updatePolicyMatrix();
+                    //SolvePolicyMatrix();???
+                    //valueIter();
+                    Iters++;
+                    // if (unchanged) {
+                    //     cont = false;
+                    // }
+                }
                 return 0;
             case 'q':
                 //do Q-learning!
@@ -462,6 +475,10 @@ public class mdp {
                 return 1;
         }
     }
+
+
+    //---------- Value Iteration ----------
+
 
     /**
      * executes an iteration of value iteration solution technique. iterates through every
@@ -513,6 +530,53 @@ public class mdp {
         }
         //return the maximum change in utility
         return maxUChange;
+    }
+
+
+    //---------- Policy Iteration ----------
+
+
+    /**
+     * generate the initial array of coefficients and rewards to be used for 
+     * the policy iteration solution technique.
+     */
+    public static void genPolicyMatrix() {
+        Matrix_Array = new double[65][65];
+        Matrix_Rewards = new double[1][65];
+        for (int x = 0; x < 65; x++) {
+            //fill in the array of rewards to be made into a matrix
+            Matrix_Rewards[0][x] = States[x].getReward();
+            for (int y = 0; y < 65; y++) {
+                //fill in the array of coefficients to be made into a matrix
+                if (x==y) Matrix_Array[x][y] = 1;
+                else Matrix_Array[x][y] = 0;
+            }
+        }
+    }
+
+    /**
+     * subtract transition values from all necessary states in the policy matrix.
+     */
+    public static void updatePolicyMatrix() {
+        for (State start: States) {
+            int x = start.getStateNum();
+            dir policy = start.getOptMove();
+
+            State direct = start.getNeighbor(policy);
+            State clockwise = start.getNeighbor(policy.clockwise());
+            State counter = start.getNeighbor(policy.counter());
+
+            int y = direct.getStateNum();
+            Matrix_Array[x][y] -= transition(start, policy, direct);
+            if (!clockwise.equals(direct)) {
+                y = clockwise.getStateNum();
+                Matrix_Array[x][y] -= transition(start, policy, clockwise);
+            }
+            if (!counter.equals(direct) && !counter.equals(clockwise)) {
+                y = counter.getStateNum();
+                Matrix_Array[x][y] -= transition(start, policy, counter);
+            }
+        }
     }
 
 

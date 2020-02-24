@@ -458,12 +458,12 @@ public class mdp {
                 while (cont) {
                     genPolicyMatrix();
                     updatePolicyMatrix();
-                    //SolvePolicyMatrix();???
-                    //valueIter();
+                    solvePolicyMatrix();
+                    boolean changed = simpleValueIter();
                     Iters++;
-                    // if (unchanged) {
-                    //     cont = false;
-                    // }
+                    if (changed) {
+                        cont = false;
+                    }
                 }
                 return 0;
             case 'q':
@@ -577,6 +577,64 @@ public class mdp {
                 Matrix_Array[x][y] -= transition(start, policy, counter);
             }
         }
+    }
+
+    public static void solvePolicyMatrix() {
+        Matrix Jama_Matrix_Array = new Matrix(Matrix_Array);
+        Matrix Jama_Matrix_Rewards = new Matrix(Matrix_Rewards);
+        Matrix solved = Jama_Matrix_Array.solve(Jama_Matrix_Rewards);
+
+
+        for(int x = 0; x < 65; x++){
+            Matrix_Rewards[x] = solved.getArray()[x][0];
+        }
+    }
+
+    //can this be more optimized?
+
+
+    public static boolean simpleValueIter() {
+        boolean changed = false;//to check if the policy changes between iterations
+        //iterate through every state
+        for (State state : States) {
+            double bestDirVal = -Double.MAX_VALUE;//so that it definitely gets updated
+            dir bestDir = null;
+            //iterate through each possible action
+            for (dir direction: dir.values()) {
+                //get each neighbor reachable through current action
+                State direct = state.getNeighbor(direction);
+                State counter = state.getNeighbor(direction.counter());
+                State clockwise = state.getNeighbor(direction.clockwise());
+                //calculate total utility of each of those neighbors
+                double utility = (transition(state, direction, direct) * direct.getValue());
+                //make sure counter neighbor hasn't already been checked
+                if (!direct.equals(counter)) {
+                utility += (transition(state, direction, counter) * counter.getValue());
+                }
+                //make sure clockwise neighbor hasn't already been checked
+                if (!direct.equals(clockwise) && !counter.equals(clockwise)) { 
+                utility += (transition(state, direction, clockwise) * clockwise.getValue());
+                }
+                //if one of the possible states is 40, then the key loss prob means 41 is also possible
+                if (direct.equals(States[40]) || counter.equals(States[40]) || clockwise.equals(States[40])) {
+                    utility += (transition(state, direction, States[41]) * States[41].getValue());
+                }
+                //if this is the best direction update the current direction and value
+                if (utility > bestDirVal) {
+                    bestDirVal = utility;
+                    bestDir = direction;
+                    //note that the policy has changed
+                    changed = true;
+                }
+            }
+            //calculate the actual new utility and change in utility
+            double newVal = state.getReward() + (Discount_Factor * bestDirVal);
+            //update state value and optimal move
+            state.setValue(newVal);
+            state.setOptMove(bestDir);
+        }
+        //return if the policy changed
+        return changed;
     }
 
 

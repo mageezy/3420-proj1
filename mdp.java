@@ -15,7 +15,7 @@ public class mdp {
     public static double Neg_Reward = -1;
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
-    public static char Sol_Type = 'v';
+    public static char Sol_Type = 'p';
 
     //specifiable only here
     public static double Forward_Prob = .8;
@@ -461,7 +461,7 @@ public class mdp {
                     solvePolicyMatrix();
                     boolean changed = simpleValueIter();
                     Iters++;
-                    if (changed) {
+                    if (!changed) {
                         cont = false;
                     }
                 }
@@ -542,10 +542,10 @@ public class mdp {
      */
     public static void genPolicyMatrix() {
         Matrix_Array = new double[65][65];
-        Matrix_Rewards = new double[1][65];
+        Matrix_Rewards = new double[65][1];
         for (int x = 0; x < 65; x++) {
             //fill in the array of rewards to be made into a matrix
-            Matrix_Rewards[0][x] = States[x].getReward();
+            Matrix_Rewards[x][0] = States[x].getReward();
             for (int y = 0; y < 65; y++) {
                 //fill in the array of coefficients to be made into a matrix
                 if (x==y) Matrix_Array[x][y] = 1;
@@ -567,26 +567,29 @@ public class mdp {
             State counter = start.getNeighbor(policy.counter());
 
             int y = direct.getStateNum();
-            Matrix_Array[x][y] -= transition(start, policy, direct);
+            Matrix_Array[x][y] -= Discount_Factor * transition(start, policy, direct);
             if (!clockwise.equals(direct)) {
                 y = clockwise.getStateNum();
-                Matrix_Array[x][y] -= transition(start, policy, clockwise);
+                Matrix_Array[x][y] -= Discount_Factor * transition(start, policy, clockwise);
             }
             if (!counter.equals(direct) && !counter.equals(clockwise)) {
                 y = counter.getStateNum();
-                Matrix_Array[x][y] -= transition(start, policy, counter);
+                Matrix_Array[x][y] -= Discount_Factor * transition(start, policy, counter);
+            }
+            if (direct.equals(States[40]) || counter.equals(States[40]) || clockwise.equals(States[40])) {
+                Matrix_Array[x][41] -= Discount_Factor * transition(start, policy, States[41]);
             }
         }
     }
 
     public static void solvePolicyMatrix() {
-        Matrix Jama_Matrix_Array = new Matrix(Matrix_Array);
-        Matrix Jama_Matrix_Rewards = new Matrix(Matrix_Rewards);
-        Matrix solved = Jama_Matrix_Array.solve(Jama_Matrix_Rewards);
+        Jama.Matrix Jama_Matrix_Array = new Jama.Matrix(Matrix_Array);
+        Jama.Matrix Jama_Matrix_Rewards = new Jama.Matrix(Matrix_Rewards);
+        Jama.Matrix solved = Jama_Matrix_Array.solve(Jama_Matrix_Rewards);
 
 
         for(int x = 0; x < 65; x++){
-            Matrix_Rewards[x] = solved.getArray()[x][0];
+            States[x].setValue(solved.getArray()[x][0]);
         }
     }
 
@@ -623,13 +626,12 @@ public class mdp {
                 if (utility > bestDirVal) {
                     bestDirVal = utility;
                     bestDir = direction;
-                    //note that the policy has changed
-                    changed = true;
                 }
             }
             //calculate the actual new utility and change in utility
-            double newVal = state.getReward() + (Discount_Factor * bestDirVal);
+            double newVal = state.getReward() + bestDirVal;
             //update state value and optimal move
+            if (state.getOptMove() != bestDir) changed = true;
             state.setValue(newVal);
             state.setOptMove(bestDir);
         }

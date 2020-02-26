@@ -9,7 +9,7 @@ public class mdp {
     //===============  Global Variables  ===============
 
     //specifiable here or at command line
-    public static double Discount_Factor = 1;
+    public static double Discount_Factor = .99;
     public static double Max_Error = 1.0E-6;
     public static double Pos_Reward = 1;
     public static double Neg_Reward = -1;
@@ -461,9 +461,7 @@ public class mdp {
                     solvePolicyMatrix();
                     boolean changed = simpleValueIter();
                     Iters++;
-                    if (!changed) {
-                        cont = false;
-                    }
+                    if (!changed) cont = false;
                 }
                 return 0;
             case 'q':

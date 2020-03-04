@@ -9,7 +9,7 @@ public class mdp {
     //===============  Global Variables  ===============
 
     //specifiable here or at command line
-    public static double Discount_Factor = .99;
+    public static double Discount_Factor = 1;
     public static double Max_Error = 1.0E-6;
     public static double Pos_Reward = 1;
     public static double Neg_Reward = -1;
@@ -108,6 +108,9 @@ public class mdp {
      * @param args
      */
     public static void main(String [] args) {
+
+        //for parsing command line input
+
         //if help is entered output help message and then end the program
         if ((args.length > 0) && (args[0].equals("help"))) {
             System.out.println(Help_Message);
@@ -129,6 +132,8 @@ public class mdp {
                     System.out.println("call \"java mdp help\" for a help message");
                 }
             }
+
+            //Initialize all the state objects and their values
             generateBoard();
             genStateArray();
             genNeighbors();
@@ -137,6 +142,7 @@ public class mdp {
             // genTransitionArray();//for debugging purposes
             // testFunctions();//for debugging purposes
 
+            //Run the chosen solution technique on the MDP
             long startTime = System.currentTimeMillis();
             int worked = solveMDP(Sol_Type);
             long endTime = System.currentTimeMillis();
@@ -458,8 +464,8 @@ public class mdp {
                 while (cont) {
                     genPolicyMatrix();
                     updatePolicyMatrix();
-                    solvePolicyMatrix();
-                    boolean changed = simpleValueIter();
+                    solvePolicyMatrix();//update values
+                    boolean changed = simpleValueIter();//update policies
                     Iters++;
                     if (!changed) cont = false;
                 }
@@ -566,14 +572,17 @@ public class mdp {
 
             int y = direct.getStateNum();
             Matrix_Array[x][y] -= Discount_Factor * transition(start, policy, direct);
+            //make sure the clockwise state hasn't already been calculated
             if (!clockwise.equals(direct)) {
                 y = clockwise.getStateNum();
                 Matrix_Array[x][y] -= Discount_Factor * transition(start, policy, clockwise);
             }
+            //make sure counter state hasn't already been calculated
             if (!counter.equals(direct) && !counter.equals(clockwise)) {
                 y = counter.getStateNum();
                 Matrix_Array[x][y] -= Discount_Factor * transition(start, policy, counter);
             }
+            //check state 41 if the current action could lead to state 40
             if (direct.equals(States[40]) || counter.equals(States[40]) || clockwise.equals(States[40])) {
                 Matrix_Array[x][41] -= Discount_Factor * transition(start, policy, States[41]);
             }
@@ -585,15 +594,12 @@ public class mdp {
         Jama.Matrix Jama_Matrix_Rewards = new Jama.Matrix(Matrix_Rewards);
         Jama.Matrix solved = Jama_Matrix_Array.solve(Jama_Matrix_Rewards);
 
-
+        //store the calculated values in the respective states
         for(int x = 0; x < 65; x++){
             States[x].setValue(solved.getArray()[x][0]);
         }
     }
-
-    //can this be more optimized?
-
-
+    
     public static boolean simpleValueIter() {
         boolean changed = false;//to check if the policy changes between iterations
         //iterate through every state
@@ -636,6 +642,12 @@ public class mdp {
         //return if the policy changed
         return changed;
     }
+
+
+    //---------- Q-Learning Functions ----------
+
+
+
 
 
     //---------- Debugging Functions ----------

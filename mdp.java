@@ -16,6 +16,9 @@ public class mdp {
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
     public static char Sol_Type = 'p';
+    public static int Trajectories = 1000;
+    public static boolean Show_Transitions = true;
+    public static double Learning_Rate = 0.1;
 
     //specifiable only here
     public static double Forward_Prob = .8;
@@ -646,7 +649,11 @@ public class mdp {
 
     //---------- Q-Learning Functions ----------
 
-
+    public static double move(State state, dir action){
+        //return reward R(s) from reward function 
+        return 0.00;
+        //also return state s' from transition function        rolling the dice 2
+    }
 
 
 

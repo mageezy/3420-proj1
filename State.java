@@ -8,6 +8,7 @@ public class State {
     //variables necessary for a state object
     private int stateNum;
     private int[] coords = new int[3];
+    private double[] qValues = new double[4];
     private double reward;
     private double value;
     //variables that can be set
@@ -32,6 +33,9 @@ public class State {
         this.stateNum = stateNum;
         optMove = null;
         value = 0;
+        for (int i = 0; i < 4; i++) {
+            qValues[i] = 0;
+        }
     }
 
     /**
@@ -48,6 +52,9 @@ public class State {
         this.coords[2] = z;
         optMove = null;
         value = 0;
+        for (int i = 0; i < 4; i++) {
+            qValues[i] = 0;
+        }
     }
 
     /**
@@ -122,6 +129,12 @@ public class State {
     }
     public double getValue() {
         return value;
+    }
+    public double getQVal(int i) {
+        return qValues[i];
+    }
+    public void setQVal(int i, double val) {
+        qValues[i] = val;
     }
     /**
      * set input neighbor to an input direction

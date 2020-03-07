@@ -1,4 +1,5 @@
 import java.lang.Math;
+import java.util.Random;
 
 /**
  * Our MDP class encompasses the entire project 1, this is the main function with which all
@@ -9,7 +10,7 @@ public class mdp {
     //===============  Global Variables  ===============
 
     //specifiable here or at command line
-    public static double Discount_Factor = 1;
+    public static double Discount_Factor = .99;
     public static double Max_Error = 1.0E-6;
     public static double Pos_Reward = 1;
     public static double Neg_Reward = -1;
@@ -54,7 +55,7 @@ public class mdp {
     /**
      * A Direction Enum to make specifiec functions for retrieving the clockwise and counter
      * clockwise directions of a direction easily, and for mapping each direction to a value
-     * that can be used for population debugging arrays.
+     * that can be used for indexing into arrays.
      */
     public enum dir {
         N(0),
@@ -649,12 +650,59 @@ public class mdp {
 
     //---------- Q-Learning Functions ----------
 
-    public static double move(State state, dir action){
-        //return reward R(s) from reward function 
-        return 0.00;
-        //also return state s' from transition function        rolling the dice 2
+
+    /**
+     * takes an input state and action and simulates a move from the given state following that
+     * action. It will return the state that is eached in the simulation, and the reward of that
+     * state can be accessed from the state object.
+     * @param start starting state object 
+     * @param action action to be taken
+     * @return the state reached
+     */
+    public static State move(State start, dir action){
+        Random rand = new Random();
+        double val = rand.nextDouble();
+        val -= Forward_Prob;
+        if (val < 0) return start.getNeighbor(action);
+        val -= Clockwise_Prob;
+        if (val < 0) return start.getNeighbor(action.clockwise());
+        val -= Counter_Prob;
+        if (val < 0) return start.getNeighbor(action.counter());
+        return null;
     }
 
+    /**
+     * This function will decide which action to take given a starting state based off of
+     * the q-values associated with its possible actions.
+     * @param start the current state
+     * @return the action to take from the current state.
+     */
+    public static dir selectAction(State start) {
+        Random rand = new Random();
+        double denom = 0;
+        double[] probs = new double[4];
+        //calculate the denominator for selecting an action
+        for (dir direction: dir.values()) {
+            denom += Math.exp(start.getQVal(direction.val));
+        }
+        //calculate each numerator for each possible action
+        for (dir direction: dir.values()) {
+            double numer = Math.exp(start.getQVal(direction.val));
+            probs[direction.val] = numer/denom;
+        }
+        //select an action using the calculated probabilities
+        double val = rand.nextDouble();
+        for (dir direction: dir.values()) {
+            val -= probs[direction.val];
+            if (val < 0) return direction;
+        }
+        return null;
+    }
+
+    public static int calcQVal(State state, dir action) {
+        //this will update the q value using the state and action and resulting state from the above functions
+        return 0;
+    }
 
 
     //---------- Debugging Functions ----------

@@ -16,7 +16,7 @@ public class mdp {
     public static double Neg_Reward = -1;
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
-    public static char Sol_Type = 'p';
+    public static char Sol_Type = 'q';
     public static int Trajectories = 1000;
     public static boolean Show_Transitions = true;
     public static double Learning_Rate = 0.1;
@@ -424,7 +424,9 @@ public class mdp {
     }
 
     /**
-     * checks if a state is a terminal state
+     * Checks if a state is a terminal state.
+     * @param state the state to be checked
+     * @return true if a state is a terminal state
      */
     public static boolean terminal(State state) {
         int num = state.getStateNum();
@@ -475,7 +477,18 @@ public class mdp {
                 }
                 return 0;
             case 'q':
-                //do Q-learning!
+                for (int i = 0; i < Trajectories; i++) {
+                    State start = States[7];
+                    while (!terminal(start)) {
+                        dir action = selectAction(start);
+                        State next = move(start, action);
+                        System.out.println("State [" + start.getStateNum() + "] moved " + action + " to State [" + next.getStateNum() + "]");
+                        calcQVal(start, action, next);
+                        start = next;
+                    }
+                    System.out.println("final state was: " + start);
+                }
+                qValToVal();
                 return 0;
             default:
                 System.out.println("ERROR: invalid solution technique");
@@ -699,9 +712,51 @@ public class mdp {
         return null;
     }
 
-    public static int calcQVal(State state, dir action) {
-        //this will update the q value using the state and action and resulting state from the above functions
+    /**
+     * Updates the Q value for a given state and action pair and the state that that action leads to
+     * @param start The starting state 
+     * @param action The action taken from the starting state
+     * @param next The state reached from the action
+     * @return 0 if worked correctly
+     */
+    public static int calcQVal(State start, dir action, State next) {
+        double qVal = start.getQVal(action.val);
+        double newVal = next.getReward();
+        double nextQ = Double.MIN_VALUE;
+
+        for (dir direction: dir.values()) {
+            if (next.getQVal(direction.val) > nextQ) {
+                nextQ = next.getQVal(direction.val);
+            }
+        }
+
+        newVal += (Discount_Factor * nextQ);
+        newVal -= qVal;
+        qVal += (Learning_Rate * newVal);
+        System.out.println("New Q value for State [" + start.getStateNum() + "] is " + qVal);
+        start.setQVal(action.val, qVal);
+
         return 0;
+    }
+
+    /**
+     * Iterate through each state and find the best q value and the direction that the
+     * q value is for, then set the value and optimal move for that state to the best
+     * q value and that direction.
+     */
+    public static void qValToVal() {
+        for (State state: States) {
+            double bestVal = Double.MIN_VALUE;
+            dir bestDir = null;
+            for (dir direction: dir.values()) {
+                if (state.getQVal(direction.val) > bestVal) {
+                    bestVal = state.getQVal(direction.val);
+                    bestDir = direction;
+                }
+            }
+            state.setValue(bestVal);
+            state.setOptMove(bestDir);
+        }
     }
 
 

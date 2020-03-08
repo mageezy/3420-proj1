@@ -18,13 +18,7 @@ public class State {
     private State east = null;
     private State west = null;
 
-
-//give this 4 Q values for each direction
-//potentially also a method to total these as the denominator for the P function to roll the first die
-
-
-
-
+    
     /**
      * constructor for a state object with only a state number
      * @param stateNum is the number of the state

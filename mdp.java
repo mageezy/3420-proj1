@@ -17,8 +17,8 @@ public class mdp {
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
     public static char Sol_Type = 'q';
-    public static int Trajectories = 1000;
-    public static boolean Show_Transitions = true;
+    public static int Trajectories = 100000;
+    public static boolean Show_Transitions = false;
     public static double Learning_Rate = 0.1;
 
     //specifiable only here
@@ -33,12 +33,14 @@ public class mdp {
     private static double[][] Matrix_Rewards;//for policy iteration
     private static int Iters = 0;
     private static long totalTime = 0;
+    private static int Num_Transitions = 0;//for Q-learning
     private static final String Help_Message = 
     "======================== Help Message ========================\n"
     + "When using arguments specified in function run without any arguments\n"
     + "When inputting arguments from command line follow following format:\n"
-    + "   java mdp Discount[double] Max_Error[double] key_loss_probability[double]\n"
-    + "   pos_reward[double] neg_reward[double] step_cost[double] solution_technique[char]\n"
+    + "   java mdp Discount[double] Max_Error[double] Key_Loss_Probability[double]\n"
+    + "   Pos_Reward[double] Neg_Reward[double] Step_Cost[double] Solution_Technique[char]\n"
+    + "   (if using Q-learning) Trajectories[int] Transitions[t or f] Learning_Rate[Double]\n"
     + "\n ---------- common values / value options ----------\n"
     + "Discount: between 1 and 0, otherwise values go to infinity\n"
     + "Max_Error: often close to 0, higher value will mean fewer iterations\n"
@@ -47,6 +49,9 @@ public class mdp {
     + "neg_reward: anything negative, bigger value will overshadow positive reward\n"
     + "step_cost: generally negative, if positive terminal states will be avoided\n"
     + "solution_technique: 'v' for value iteration, 'p' for policy iteration, 'q' for Q-learning\n"
+    + "Trajectories: 100,000 is a good starting point\n"
+    + "Transitions: t to print out start state, action, and end state for each transition\n"
+    + "Learning Rate: something between 0 and 1, 0.1 is a good starting point\n"
     + "===============================================================";
 
     //for debugging
@@ -128,6 +133,13 @@ public class mdp {
                     Neg_Reward = Double.parseDouble(args[4]);
                     Step_Cost = Double.parseDouble(args[5]);
                     Sol_Type = args[6].charAt(0);
+                    //if using Q-learning there are more parameters
+                    if (Sol_Type == 'q') {
+                        Trajectories = Integer.parseInt(args[7]);
+                        if (args[8] == "t") Show_Transitions = true;
+                        else Show_Transitions = false;
+                        Learning_Rate = Double.parseDouble(args[9]);
+                    }
                 } catch (NumberFormatException e) {
                     System.out.println("ERROR: Bad input");
                     System.out.println("call \"java mdp help\" for a help message");
@@ -347,8 +359,16 @@ public class mdp {
         System.out.println(" Positive Terminal State Reward: " + Pos_Reward);
         System.out.println(" Negative Terminal State Reward: " + Neg_Reward);
         System.out.println(" Step Cost: " + Step_Cost);
+        //if Q-learning print our q-learning specific parameters.
+        if (Sol_Type == 'q') {
+            System.out.println(" Learning Rate: " + Learning_Rate);
+        }
         System.out.println(" Solution Technique: " + Sol_Type + "\n");
-        System.out.println(" Iterations: " + Iters);
+        System.out.println(" Number of Iterations: " + Iters);
+        //if Q-learning print our q-learning specific parameters.
+        if (Sol_Type == 'q') {
+            System.out.println(" Number of Actions: " + Num_Transitions);
+        }
         System.out.println(" Time: " + totalTime + " milliseconds");
         System.out.println();
     }
@@ -450,7 +470,8 @@ public class mdp {
      * takes a character input to determine which solution technique should be used in solving
      * the MDP. so far only value iteration has been implemented. calls valueIter function to do
      * the main work in value iteration
-     * @param solType
+     * @param solType the type of solution technique to be used
+     * @return 0 if it worked correctly, otherwise 1
      */
     public static int solveMDP(char solType) {
         boolean cont;
@@ -477,18 +498,26 @@ public class mdp {
                 }
                 return 0;
             case 'q':
-                for (int i = 0; i < Trajectories; i++) {
-                    State start = States[7];
-                    while (!terminal(start)) {
-                        dir action = selectAction(start);
-                        State next = move(start, action);
-                        System.out.println("State [" + start.getStateNum() + "] moved " + action + " to State [" + next.getStateNum() + "]");
-                        calcQVal(start, action, next);
-                        start = next;
+                setTerminalQVals();//initialize the q-vals of terminal states
+                for (int i = 0; i < Trajectories; i++) {//each trajectory/iteration
+                    State start = States[7];//start at state 7
+                    while (!terminal(start)) {//keep going until a terminal state is reached
+                        dir action = selectAction(start);//get action
+                        State next = move(start, action);//get next state
+                        calcQVal(start, action, next);//update Q-value
+
+                        if (Show_Transitions) {
+                            System.out.println("(" + start.getStateNum() + " , " 
+                            + action + " , " + next.getStateNum() + ")");
+                        }
+
+                        Num_Transitions++;//update the number of actions taken
+                        start = next;//update the current state
                     }
-                    System.out.println("final state was: " + start);
                 }
+                //set all the values and optimal moves of states to the states best Q-value
                 qValToVal();
+                Iters = Trajectories;
                 return 0;
             default:
                 System.out.println("ERROR: invalid solution technique");
@@ -675,13 +704,14 @@ public class mdp {
     public static State move(State start, dir action){
         Random rand = new Random();
         double val = rand.nextDouble();
+        //subtract each probability from the random double until it goes below 0, then take that direction
         val -= Forward_Prob;
         if (val < 0) return start.getNeighbor(action);
         val -= Clockwise_Prob;
         if (val < 0) return start.getNeighbor(action.clockwise());
         val -= Counter_Prob;
         if (val < 0) return start.getNeighbor(action.counter());
-        return null;
+        return null;//if somehow never returns a state return null
     }
 
     /**
@@ -717,26 +747,22 @@ public class mdp {
      * @param start The starting state 
      * @param action The action taken from the starting state
      * @param next The state reached from the action
-     * @return 0 if worked correctly
      */
-    public static int calcQVal(State start, dir action, State next) {
+    public static void calcQVal(State start, dir action, State next) {
         double qVal = start.getQVal(action.val);
         double newVal = next.getReward();
         double nextQ = Double.MIN_VALUE;
-
+        //find best q-value in next state
         for (dir direction: dir.values()) {
             if (next.getQVal(direction.val) > nextQ) {
                 nextQ = next.getQVal(direction.val);
             }
         }
-
+        //calculate new q value for start state
         newVal += (Discount_Factor * nextQ);
         newVal -= qVal;
         qVal += (Learning_Rate * newVal);
-        System.out.println("New Q value for State [" + start.getStateNum() + "] is " + qVal);
         start.setQVal(action.val, qVal);
-
-        return 0;
     }
 
     /**
@@ -745,17 +771,42 @@ public class mdp {
      * q value and that direction.
      */
     public static void qValToVal() {
-        for (State state: States) {
-            double bestVal = Double.MIN_VALUE;
-            dir bestDir = null;
+        for (State state: States) {//each state
+            double bestVal = -Double.MAX_VALUE;
+            dir bestDir = dir.N;
+            //find the best out of the 4 Q-values
             for (dir direction: dir.values()) {
                 if (state.getQVal(direction.val) > bestVal) {
                     bestVal = state.getQVal(direction.val);
                     bestDir = direction;
                 }
             }
-            state.setValue(bestVal);
-            state.setOptMove(bestDir);
+            //if value hasnt already been updated, set new value
+            if (state.getValue() == 0) {
+                state.setValue(bestVal);
+                state.setOptMove(bestDir);
+            }
+        }
+    }
+
+    /**
+     * This Function sets the Q-values for each possible direction in all of the
+     * terminal states to the respective reward in that state.
+     */
+    public static void setTerminalQVals() {
+        for (State state: States) {
+            if (terminal(state)) {//if the state is a terminal state change the Q-values
+                for (int i = 0; i < 4; i++) {
+                    //If the state is the positive reward state
+                    if (state.getStateNum() == 28) {
+                        state.setQVal(i, Pos_Reward);
+                        state.setValue(Pos_Reward);
+                    } else {//if not its a negative reward state
+                        state.setQVal(i, Neg_Reward);
+                        state.setValue(Neg_Reward);
+                    }
+                }
+            }
         }
     }
 

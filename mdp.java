@@ -136,7 +136,7 @@ public class mdp {
                     //if using Q-learning there are more parameters
                     if (Sol_Type == 'q') {
                         Trajectories = Integer.parseInt(args[7]);
-                        if (args[8] == "t") Show_Transitions = true;
+                        if (args[8].charAt(0) == 't') Show_Transitions = true;
                         else Show_Transitions = false;
                         Learning_Rate = Double.parseDouble(args[9]);
                     }

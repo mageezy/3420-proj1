@@ -500,19 +500,22 @@ public class mdp {
             case 'q':
                 setTerminalQVals();//initialize the q-vals of terminal states
                 for (int i = 0; i < Trajectories; i++) {//each trajectory/iteration
-                    State start = States[7];//start at state 7
-                    while (!terminal(start)) {//keep going until a terminal state is reached
-                        dir action = selectAction(start);//get action
-                        State next = move(start, action);//get next state
-                        calcQVal(start, action, next);//update Q-value
+                    for (State state : States) {
+                        State start = state;
+                        while (!terminal(start)) {//keep going until a terminal state is reached
+                            dir action = selectAction(start);//get action
+                            State next = move(start, action);//get next state
+                            calcQVal(start, action, next);//update Q-value
 
-                        if (Show_Transitions) {
-                            System.out.println("(" + start.getStateNum() + " , " 
-                            + action + " , " + next.getStateNum() + ")");
+                            if (Show_Transitions) {
+                                System.out.println("(" + start.getStateNum() + " , " 
+                                + action + " , " + next.getStateNum() + ")");
+                            }
+
+                            Num_Transitions++;//update the number of actions taken
+                            start = next;//update the current state
                         }
-
-                        Num_Transitions++;//update the number of actions taken
-                        start = next;//update the current state
+                        
                     }
                 }
                 //set all the values and optimal moves of states to the states best Q-value

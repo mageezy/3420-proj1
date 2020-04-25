@@ -482,7 +482,7 @@ public class mdp {
                     double maxChange = valueIter();
                     // printGameBoard();
                     Iters++;
-                    //check stop criterion
+                    //check stop criterion using max error
                     if (maxChange <= (Max_Error * (1-Discount_Factor)/Discount_Factor)) cont = false;
                 } 
                 return 0;
@@ -578,6 +578,7 @@ public class mdp {
             //if change in utility is the largest yet set new max
             if (uChange > maxUChange) maxUChange = uChange;
             //update state value and optimal move
+            //if (state.getOptMove() != bestDir)
             state.setValue(newVal);
             state.setOptMove(bestDir);
         }

@@ -17,7 +17,7 @@ public class mdp {
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
     public static char Sol_Type = 'q';
-    public static int Trajectories = 100000;
+    public static int Trajectories = 2000;
     public static boolean Show_Transitions = false;
     public static double Learning_Rate = 0.1;
 
@@ -480,8 +480,9 @@ public class mdp {
                 cont = true;
                 while (cont) {//do value iteration until the stop criterion is reached
                     double maxChange = valueIter();
-                    // printGameBoard();
                     Iters++;
+                    // System.out.println("\nIter: " + Iters);
+                    // printGameBoard();
                     //check stop criterion using max error
                     if (maxChange <= (Max_Error * (1-Discount_Factor)/Discount_Factor)) cont = false;
                 } 
@@ -498,7 +499,7 @@ public class mdp {
                 }
                 return 0;
             case 'q':
-                setTerminalQVals();//initialize the q-vals of terminal states
+                //setTerminalQVals();//initialize the q-vals of terminal states
                 for (int i = 0; i < Trajectories; i++) {//each trajectory/iteration
                     for (State state : States) {
                         State start = state;
@@ -578,7 +579,6 @@ public class mdp {
             //if change in utility is the largest yet set new max
             if (uChange > maxUChange) maxUChange = uChange;
             //update state value and optimal move
-            //if (state.getOptMove() != bestDir)
             state.setValue(newVal);
             state.setOptMove(bestDir);
         }
@@ -776,44 +776,26 @@ public class mdp {
      */
     public static void qValToVal() {
         for (State state: States) {//each state
-            double bestVal = -Double.MAX_VALUE;
-            dir bestDir = dir.N;
-            //find the best out of the 4 Q-values
-            for (dir direction: dir.values()) {
-                if (state.getQVal(direction.val) > bestVal) {
-                    bestVal = state.getQVal(direction.val);
-                    bestDir = direction;
-                }
-            }
-            //if value hasnt already been updated, set new value
-            if (state.getValue() == 0) {
-                state.setValue(bestVal);
-                state.setOptMove(bestDir);
-            }
-        }
-    }
-
-    /**
-     * This Function sets the Q-values for each possible direction in all of the
-     * terminal states to the respective reward in that state.
-     */
-    public static void setTerminalQVals() {
-        for (State state: States) {
-            if (terminal(state)) {//if the state is a terminal state change the Q-values
-                for (int i = 0; i < 4; i++) {
-                    //If the state is the positive reward state
-                    if (state.getStateNum() == 28) {
-                        state.setQVal(i, Pos_Reward);
-                        state.setValue(Pos_Reward);
-                    } else {//if not its a negative reward state
-                        state.setQVal(i, Neg_Reward);
-                        state.setValue(Neg_Reward);
+            if (terminal(state)) {//if it is a terminal state the value is just the reward
+                state.setValue(state.getReward());
+            } else {//otherwise value will be one of the q-values
+                double bestVal = -Double.MAX_VALUE;
+                dir bestDir = dir.N;
+                //find the best out of the 4 Q-values
+                for (dir direction: dir.values()) {
+                    if (state.getQVal(direction.val) > bestVal) {
+                        bestVal = state.getQVal(direction.val);
+                        bestDir = direction;
                     }
                 }
+                //if value hasnt already been updated, set new value
+                if (state.getValue() == 0) {
+                    state.setValue(bestVal);
+                    state.setOptMove(bestDir);
+                }
             }
         }
     }
-
 
     //---------- Debugging Functions ----------
 

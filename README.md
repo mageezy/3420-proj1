@@ -4,10 +4,13 @@ by Caleb Eurich, Tenzin Choezin, Elliot Ketchel.
 All variables such as positive and negative rewards, Step costs, Probabilities of going forward vs
 clockwise or counterclockwise are specified in the top of the MDP function. There is nothing to parse
 input from the command line yet, so the character to specify which solution technique to use so it also
-needs to be specified in the parameters at the top of the mdp file.
+needs to be specified in the parameters at the top of the mdp file. 
+
+**Q-Learning does not work properly. Further debugging is needed to fix it. For some reason almost all 
+of the odd states (states where the agent does not have the key) are not updating.**
 
 To see the message below call "java mdp help"
-When using arguments specified in function run without any arguments.
+When using arguments specified in the mdp.java file run without any arguments.
 When inputting arguments from command line use following format:
     java mdp Discount[double] Max_Error[double] key_loss_probability[double]
     pos_reward[double] neg_reward[double] step_cost[double] solution_technique[char]

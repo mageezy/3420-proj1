@@ -17,7 +17,7 @@ public class mdp {
     public static double Step_Cost = -.04;
     public static double Key_Loss_Prob = .5;
     public static char Sol_Type = 'q';
-    public static int Trajectories = 2000;
+    public static int Trajectories = 100000;
     public static boolean Show_Transitions = false;
     public static double Learning_Rate = 0.1;
 
